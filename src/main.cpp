@@ -2,22 +2,62 @@
 #include "resource_dir.h"
 #include <string>
 #include <iostream>
+#include <deque>
 
 #define TILE_SIZE 32
 
+// ===================================================================
+// type definitions for Snake and Food
+// ===================================================================
+typedef struct Snake {
+	std::deque<Rectangle> bodyDeque;
+	Vector2 speed;
+	Color color;
+} Snake;
+
+typedef struct Food {
+	Vector2 position;
+	Vector2 size;
+	bool active;
+	Color color;
+} Food;
+
+// ===================================================================
+// global variable declarations
+// ===================================================================
+static const int windowWidth = 1280;
+static const int windowHeight = 800;
+
+static bool bIsGameOver = false;
+static bool bIsPaused = false;
+static int playerScore;
+
+static Food fruit = { 0 };
+static std::deque<Snake> snake = {};
+
+// ===================================================================
+// local forward declarations
+// ===================================================================
+Snake initSnake(Vector2 startPos, float blockSize, Color color)
+{
+	Snake snake;
+	snake.color = color;
+	snake.speed = { blockSize, 0 };
+
+	Rectangle head = { startPos.x, startPos.y, blockSize, blockSize };
+	snake.bodyDeque.push_back(head);
+
+	return snake;
+}
 static void HandleUserInput(Vector2& playerPos);
 static void SetPlayerPosition(Rectangle& player, Vector2& playerPos);
 static void DrawGrid();
 static void SetNewFoodLocation(Rectangle& food);
 static void UpdateMovingTextPos(Vector2& textPos);
 
-const int windowWidth = 1280;
-const int windowHeight = 800;
-
-static bool bIsGameOver;
-static bool bIsPaused = false;
-static int playerScore;
-
+// ===================================================================
+// main entry point
+// ===================================================================
 int main()
 {
 	// tell window to use vsync and work on high DPI displays
