@@ -1,19 +1,21 @@
 #include "raylib.h"
 #include "resource_dir.h"
 #include <string>
+#include <iostream>
 
 #define TILE_SIZE 32
 
 static void HandleUserInput(Vector2& playerPos);
+static void SetPlayerPosition(Rectangle& player, Vector2& playerPos);
 static void DrawGrid();
 static void SetNewFoodLocation(Rectangle& food);
-static void SetPlayerScore(int playerScore);
+static void UpdateMovingTextPos(Vector2& textPos);
 
 const int windowWidth = 1280;
 const int windowHeight = 800;
 
 static bool bIsGameOver;
-static bool bIsPaused;
+static bool bIsPaused = false;
 static int playerScore;
 
 int main()
@@ -39,41 +41,48 @@ int main()
 
 	int currentFps = 60;
 	SetTargetFPS(currentFps);
+	float moveDelay = 0.25f;
+	float moveTimer = 0.0f;
 
 	// game loop
 	while (!WindowShouldClose())
 	{
-		BeginDrawing();
+		if (!bIsPaused)
+		{
+			moveTimer += GetFrameTime();
 
+			UpdateMovingTextPos(textPos);
+
+			if (moveTimer >= moveDelay)
+			{
+				moveTimer = 0.0f;
+				SetPlayerPosition(player, playerPos);
+				player.x = playerPos.x;
+				player.y = playerPos.y;
+			}
+			bool bCollidedWithFood = CheckCollisionRecs(player, food);
+
+			if (bCollidedWithFood)
+			{
+				playerScore += 100;
+				std::cout << "PLAYER SCORE:" << playerScore << std::endl;
+				SetNewFoodLocation(food);
+			}
+		}
+		BeginDrawing();
 		ClearBackground(BLACK);
 		DrawGrid();
- 
 		DrawText("Hello", textPos.x, textPos.y, 20, WHITE);
-		textPos.x += int(1);
-		textPos.y += int(1);
-		if (textPos.x >= windowWidth)
-		{
-			textPos.x = 0;
-		}
-		if (textPos.y >= windowHeight)
-		{
-			textPos.y = 0;
-		}
 		HandleUserInput(playerPos);
-		
-		player.x = playerPos.x;
-		player.y = playerPos.y;
-
-		DrawRectangleRec(player, DARKBLUE);
-		bool bCollidedWithFood = CheckCollisionRecs(player, food);
-
-		if (bCollidedWithFood)
-		{
-			SetNewFoodLocation(food);
-		}
-
 		DrawRectangleRec(food, RED);
+		DrawRectangleRec(player, DARKBLUE);
+		DrawText(("Score: " + std::to_string(playerScore)).c_str(), 20, 20, 30, WHITE);
 
+		if (bIsPaused)
+		{
+			DrawText("PAUSED", 640, 400, 40, WHITE);
+
+		}
 		EndDrawing();
 	}
 	CloseWindow();
@@ -82,16 +91,37 @@ int main()
 
 void HandleUserInput(Vector2& playerPos)
 {
-	if (IsKeyDown(KEY_RIGHT)) playerPos.x += 2.0f;
-	if (IsKeyDown(KEY_LEFT)) playerPos.x -= 2.0f;
-	if (IsKeyDown(KEY_UP)) playerPos.y -= 2.0f;
-	if (IsKeyDown(KEY_DOWN)) playerPos.y += 2.0f;
+	if (IsKeyDown(KEY_RIGHT)) playerPos.x += 5.0f;
+	if (IsKeyDown(KEY_LEFT)) playerPos.x -= 5.0f;
+	if (IsKeyDown(KEY_UP)) playerPos.y -= 5.0f;
+	if (IsKeyDown(KEY_DOWN)) playerPos.y += 5.0f;
+	if (IsKeyPressed(KEY_P)) bIsPaused = !bIsPaused;
+}
+
+static void SetPlayerPosition(Rectangle& player, Vector2& playerPos)
+{
+	player.x = playerPos.x;
+	player.y = playerPos.y;
 }
 
 void SetNewFoodLocation(Rectangle& food)
 {
 	food.x = static_cast<float>(GetRandomValue(0, windowWidth));
 	food.y = static_cast<float>(GetRandomValue(0, windowHeight));
+}
+
+void UpdateMovingTextPos(Vector2& textPos)
+{
+	textPos.x += int(1);
+	textPos.y += int(1);
+	if (textPos.x >= windowWidth)
+	{
+		textPos.x = 0;
+	}
+	if (textPos.y >= windowHeight)
+	{
+		textPos.y = 0;
+	}
 }
 
 void DrawGrid()
